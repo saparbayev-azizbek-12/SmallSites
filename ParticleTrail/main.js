@@ -207,7 +207,7 @@ window.addEventListener("touchstart", e => {
     touchLongPressTimer = setTimeout(() => {
         showMenu(touchStartX, touchStartY);
         isDrawing = false; // stop drawing when menu opens
-    }, 2000); // 2 seconds
+    }, 1000); // 2 seconds
 
     // Start drawing only after short delay
     isDrawing = true;
@@ -242,7 +242,7 @@ window.addEventListener("touchcancel", () => {
 // Long-press for mouse (single listener)
 function startLongPress(x, y) {
     pressX = x; pressY = y;
-    longPressTimer = setTimeout(() => { showMenu(pressX, pressY); stopDrawing(); }, 1200);
+    longPressTimer = setTimeout(() => { showMenu(pressX, pressY); stopDrawing(); }, 1000);
 }
 window.addEventListener("mousedown", e => startLongPress(e.clientX, e.clientY));
 window.addEventListener("mousemove", () => clearTimeout(longPressTimer));
