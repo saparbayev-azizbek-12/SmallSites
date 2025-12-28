@@ -26,115 +26,195 @@
 <canvas id="canvas"></canvas>
 
 <script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-window.addEventListener("resize", () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-});
 
-let particles = [];
+    window.addEventListener("resize", () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
 
-class Particle {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.size = Math.random() * 4 + 1;
-        this.life = 2;
-        this.vx = (Math.random() - 0.5) * 3;
-        this.vy = (Math.random() - 0.5) * 3;
+    /* ================== STATE ================== */
+
+    let particles = [];
+
+    let lastX = null;
+    let lastY = null;
+    let prevX = null;
+    let prevY = null;
+
+    let targetX = null;
+    let targetY = null;
+    let drawX = null;
+    let drawY = null;
+
+    let isDrawing = false;
+
+    const SPACING = 3;        // distance between particles
+    const FOLLOW_SPEED = 0.35; // responsiveness (0.2–0.5)
+
+    /* ================== RESET ================== */
+
+    function resetStroke() {
+        lastX = null;
+        lastY = null;
+        prevX = null;
+        prevY = null;
+        drawX = null;
+        drawY = null;
     }
 
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.life -= 0.03;
-        this.size *= 0.96;
-    }
+    /* ================== PARTICLE ================== */
 
-    draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200, 0, 255, ${this.life})`;
-        ctx.shadowColor = "rgba(200,0,255,1)";
-        ctx.shadowBlur = 15;
-        ctx.fill();
-    }
-}
+    class Particle {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.size = Math.random() * 3 + 1.5;
+            this.life = 2;
+            this.vx = (Math.random() - 0.5) * 1;
+            this.vy = (Math.random() - 0.5) * 1;
+        }
 
-let lastX = null;
-let lastY = null;
-let prevX = null;
-let prevY = null;
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.life -= 0.03;
+            this.size *= 0.97;
+        }
 
-const SPACING = 3;
-
-function addParticles(x, y) {
-    if (lastX !== null && prevX !== null) {
-        // Midpoints for smooth curve
-        const cx1 = (prevX + lastX) / 2;
-        const cy1 = (prevY + lastY) / 2;
-        const cx2 = (lastX + x) / 2;
-        const cy2 = (lastY + y) / 2;
-
-        const dx = cx2 - cx1;
-        const dy = cy2 - cy1;
-        const distance = Math.hypot(dx, dy);
-        const steps = Math.floor(distance / SPACING);
-
-        for (let i = 0; i <= steps; i++) {
-            const t = i / steps || 0;
-
-            // Quadratic Bézier interpolation
-            const px =
-                (1 - t) * (1 - t) * cx1 +
-                2 * (1 - t) * t * lastX +
-                t * t * cx2;
-
-            const py =
-                (1 - t) * (1 - t) * cy1 +
-                2 * (1 - t) * t * lastY +
-                t * t * cy2;
-
-            particles.push(new Particle(px, py));
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(200, 0, 255, ${this.life})`;
+            ctx.shadowColor = "rgba(200,0,255,0.9)";
+            ctx.shadowBlur = 12;
+            ctx.fill();
         }
     }
 
-    prevX = lastX;
-    prevY = lastY;
-    lastX = x;
-    lastY = y;
-}
+    /* ================== CURVED PARTICLE SPAWN ================== */
 
-function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function addParticles(x, y) {
+        if (lastX !== null && prevX !== null) {
+            const cx1 = (prevX + lastX) / 2;
+            const cy1 = (prevY + lastY) / 2;
+            const cx2 = (lastX + x) / 2;
+            const cy2 = (lastY + y) / 2;
 
-    particles = particles.filter(p => p.life > 0);
+            const dx = cx2 - cx1;
+            const dy = cy2 - cy1;
+            const distance = Math.hypot(dx, dy);
+            const steps = Math.floor(distance / SPACING);
 
-    particles.forEach(p => {
-        p.update();
-        p.draw();
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps || 0;
+
+                const px =
+                    (1 - t) * (1 - t) * cx1 +
+                    2 * (1 - t) * t * lastX +
+                    t * t * cx2;
+
+                const py =
+                    (1 - t) * (1 - t) * cy1 +
+                    2 * (1 - t) * t * lastY +
+                    t * t * cy2;
+
+                particles.push(new Particle(px, py));
+            }
+        }
+
+        prevX = lastX;
+        prevY = lastY;
+        lastX = x;
+        lastY = y;
+    }
+
+    /* ================== ANIMATION LOOP ================== */
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+
+        if (isDrawing && targetX !== null) {
+            if (drawX === null) {
+                drawX = targetX;
+                drawY = targetY;
+            } else {
+                drawX += (targetX - drawX) * FOLLOW_SPEED;
+                drawY += (targetY - drawY) * FOLLOW_SPEED;
+            }
+
+            addParticles(drawX, drawY);
+        }
+
+        particles = particles.filter(p => p.life > 0);
+
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    /* ================== INPUT ================== */
+
+    /* Mouse */
+    window.addEventListener("mousedown", e => {
+        isDrawing = true;
+        targetX = e.clientX;
+        targetY = e.clientY;
     });
 
-    requestAnimationFrame(animate);
-}
+    window.addEventListener("mousemove", e => {
+        if (!isDrawing) return;
+        targetX = e.clientX;
+        targetY = e.clientY;
+    });
 
-animate();
+    window.addEventListener("mouseup", () => {
+        isDrawing = false;
+        resetStroke();
+    });
 
-/* Mouse support */
-window.addEventListener("mousemove", (e) => {
-    addParticles(e.clientX, e.clientY);
-});
+    window.addEventListener("mouseleave", () => {
+        isDrawing = false;
+        resetStroke();
+    });
 
-/* Touch support */
-window.addEventListener("touchmove", (e) => {
-    const touch = e.touches[0];
-    addParticles(touch.clientX, touch.clientY);
-});
+    /* Touch */
+    window.addEventListener("touchstart", e => {
+        isDrawing = true;
+        const t = e.touches[0];
+        targetX = t.clientX;
+        targetY = t.clientY;
+    });
+
+    window.addEventListener("touchmove", e => {
+        if (!isDrawing) return;
+        const t = e.touches[0];
+        targetX = t.clientX;
+        targetY = t.clientY;
+    });
+
+    window.addEventListener("touchend", () => {
+        isDrawing = false;
+        resetStroke();
+    });
+
+    window.addEventListener("touchcancel", () => {
+        isDrawing = false;
+        resetStroke();
+    });
 </script>
 
 </body>
