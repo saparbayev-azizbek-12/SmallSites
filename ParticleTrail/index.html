@@ -66,10 +66,48 @@ class Particle {
     }
 }
 
+let lastX = null;
+let lastY = null;
+let prevX = null;
+let prevY = null;
+
+const SPACING = 3;
+
 function addParticles(x, y) {
-    for (let i = 0; i < 12; i++) {
-        particles.push(new Particle(x, y));
+    if (lastX !== null && prevX !== null) {
+        // Midpoints for smooth curve
+        const cx1 = (prevX + lastX) / 2;
+        const cy1 = (prevY + lastY) / 2;
+        const cx2 = (lastX + x) / 2;
+        const cy2 = (lastY + y) / 2;
+
+        const dx = cx2 - cx1;
+        const dy = cy2 - cy1;
+        const distance = Math.hypot(dx, dy);
+        const steps = Math.floor(distance / SPACING);
+
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps || 0;
+
+            // Quadratic Bézier interpolation
+            const px =
+                (1 - t) * (1 - t) * cx1 +
+                2 * (1 - t) * t * lastX +
+                t * t * cx2;
+
+            const py =
+                (1 - t) * (1 - t) * cy1 +
+                2 * (1 - t) * t * lastY +
+                t * t * cy2;
+
+            particles.push(new Particle(px, py));
+        }
     }
+
+    prevX = lastX;
+    prevY = lastY;
+    lastX = x;
+    lastY = y;
 }
 
 function animate() {
