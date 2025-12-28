@@ -2,6 +2,11 @@ let longPressTimer = null;
 let pressX = 0;
 let pressY = 0;
 
+let touchLongPressTimer = null;
+let touchStartX = 0;
+let touchStartY = 0;
+
+
 let currentColor = "200,0,255";
 let currentShape = "circle";
 let currentSize = 4;
@@ -195,25 +200,44 @@ window.addEventListener("mouseleave", stopDrawing);
 // Touch drawing
 window.addEventListener("touchstart", e => {
     const t = e.touches[0];
-    startDrawing(t.clientX, t.clientY);
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
 
-    pressX = t.clientX;
-    pressY = t.clientY;
+    // Start long press timer
+    touchLongPressTimer = setTimeout(() => {
+        showMenu(touchStartX, touchStartY);
+        isDrawing = false; // stop drawing when menu opens
+    }, 2000); // 2 seconds
 
-    longPressTimer = setTimeout(() => {
-        showMenu(pressX, pressY);
-        stopDrawing();
-    }, 1200);
+    // Start drawing only after short delay
+    isDrawing = true;
+    targetX = touchStartX;
+    targetY = touchStartY;
 });
 
-window.addEventListener("touchmove", e => { 
-    const t = e.touches[0]; 
-    moveDrawing(t.clientX, t.clientY);
-    clearTimeout(longPressTimer);
+window.addEventListener("touchmove", e => {
+    const t = e.touches[0];
+
+    // Cancel long press if moved too far
+    if (Math.abs(t.clientX - touchStartX) > 10 || Math.abs(t.clientY - touchStartY) > 10) {
+        clearTimeout(touchLongPressTimer);
+    }
+
+    // Update drawing position
+    if (isDrawing) {
+        targetX = t.clientX;
+        targetY = t.clientY;
+    }
 });
 
-window.addEventListener("touchend", () => { stopDrawing(); clearTimeout(longPressTimer); });
-window.addEventListener("touchcancel", () => { stopDrawing(); clearTimeout(longPressTimer); });
+window.addEventListener("touchend", () => {
+    stopDrawing();
+    clearTimeout(touchLongPressTimer);
+});
+window.addEventListener("touchcancel", () => {
+    stopDrawing();
+    clearTimeout(touchLongPressTimer);
+});
 
 // Long-press for mouse (single listener)
 function startLongPress(x, y) {
