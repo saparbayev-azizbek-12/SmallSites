@@ -44,9 +44,9 @@ class Particle {
         this.x = x;
         this.y = y;
         this.size = Math.random() * 4 + 1;
-        this.life = 1;
-        this.vx = (Math.random() - 0.5) * 1.5;
-        this.vy = (Math.random() - 0.5) * 1.5;
+        this.life = 2;
+        this.vx = (Math.random() - 0.5) * 3;
+        this.vy = (Math.random() - 0.5) * 3;
     }
 
     update() {
@@ -67,7 +67,7 @@ class Particle {
 }
 
 function addParticles(x, y) {
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 20; i++) {
         particles.push(new Particle(x, y));
     }
 }
