@@ -7,11 +7,7 @@ It works on **desktop and mobile**, supports **curved strokes**, **constant dens
 
 ## 🖼 Preview
 
-### Desktop
-
-### Mobile
-
-> Tip: Replace the image files with real screenshots from your project.
+site link: https://small-sites-xi.vercel.app/
 
 ---
 
